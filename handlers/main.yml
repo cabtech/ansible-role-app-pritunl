@@ -1,0 +1,17 @@
+---
+# --------------------------------
+
+- name: HandlerRestartMongoDb
+  ansible.builtin.systemd:
+    name: mongod
+    state: restarted
+  become: true
+
+- name: HandlerRestartPritunl
+  ansible.builtin.systemd:
+    name: pritunl
+    state: restarted
+  become: true
+
+# --------------------------------
+...

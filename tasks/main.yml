@@ -1,0 +1,104 @@
+---
+# --------------------------------
+
+- name: "Pritunl dependencies"
+  ansible.builtin.apt:
+    name: "{{ pritunl_pkg_dependencies }}"
+    state: present
+  become: true
+  tags: [ct-pritunl]
+
+- name: "Signing key of Pritunl repo"
+  ansible.builtin.apt_key:
+    id: "{{ pritunl_signing_key }}"
+    keyserver: "{{ pritunl_keyserver }}"
+    state: "{{ pritunl_state }}"
+    validate_certs: true
+  become: true
+  tags: [ct-pritunl]
+
+- name: "APT repository"
+  ansible.builtin.apt_repository:
+    filename: pritunl
+    repo: "{{ pritunl_repo_path }}"
+    state: "{{ pritunl_state }}"
+    update_cache: true
+    validate_certs: true
+  register: reg_apt
+  become: true
+  tags: [ct-pritunl]
+
+- name: "System limits"
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/pritunl.conf
+    group: root
+    mode: "0644"
+    owner: root
+    src: limits.conf
+  become: true
+  tags: [ct-pritunl]
+
+- name: "Mongodb admin user"
+  community.mongodb.mongodb_user:
+    database: admin
+    name: root
+    password: "{{ mongodb_root_password }}"
+    roles: "userAdminAnyDatabase,dbAdminAnyDatabase,readWriteAnyDatabase"
+    state: present
+  when: mongodb_root_password is defined
+  tags: [ct-pritunl]
+
+- name: "Mongodb pritunl user"
+  community.mongodb.mongodb_user:
+    database: admin
+    name: pritunl
+    password: "{{ mongodb_pritunl_password }}"
+    roles: [{role: "dbOwner", db: "pritunl"}]
+    state: present
+  when:
+  - mongodb_pritunl_password is defined
+  - mongodb_root_password is defined
+  tags: [ct-pritunl]
+
+- name: "Control Mongodb authorisation"
+  ansible.builtin.lineinfile:
+    line: "auth=true"
+    path: "{{ mongodb_config_file | default('/etc/mongodb.conf') }}"
+    state: present
+  when: mongodb_root_password is defined
+  notify: HandlerRestartMongoDb
+  become: true
+  tags: [ct-pritunl]
+
+- name: "Pritunl package"
+  ansible.builtin.apt:
+    name: "{{ pritunl_pkg_name }}"
+    state: "{{ pritunl_state }}"
+    update_cache: "{{ reg_apt is changed }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  become: true
+  tags: [ct-pritunl]
+
+- name: "Pritunl configuration file"
+  ansible.builtin.template:
+    src: pritunl.conf.j2
+    dest: /etc/pritunl.conf
+    owner: root
+    group: root
+    mode: "0664"
+  when: false  # skipped for now
+  no_log: true
+  notify: HandlerRestartPrintunl
+  become: true
+  tags: [ct-pritunl]
+
+- name: "Pritunl service"
+  ansible.builtin.systemd:
+    enabled: "{{ pritunl_svc_enabled }}"
+    name: "{{ pritunl_svc_name }}"
+    state: "{{ pritunl_svc_state }}"
+  become: true
+  tags: [ct-pritunl]
+
+# --------------------------------
+...

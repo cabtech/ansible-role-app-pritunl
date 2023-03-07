@@ -1,0 +1,20 @@
+---
+# --------------------------------
+
+pritunl_keyserver: "hkp://keyserver.ubuntu.com"
+# pritunl_mongodb_uri: "mongodb://localhost:27017/pritunl?authSource=admin"
+# pritunl_mongodb_uri: "mongodb://pritunl:{{ mongodb_pritunl_password }}@localhost:27017/pritunl?authSource=admin"
+pritunl_mongodb_uri: "mongodb://localhost:27017/pritunl"
+pritunl_pkg_dependencies: ["apt-transport-https", "wireguard"]
+pritunl_pkg_name: pritunl
+pritunl_repo_path: "deb {{ pritunl_repo_url }} {{ ansible_distribution_release }} main"
+pritunl_repo_url: "https://repo.pritunl.com/stable/apt"
+pritunl_signing_key: "7568D9BB55FF9E5287D586017AE645C0CF8E292A"
+pritunl_state: present
+
+pritunl_svc_enabled: true
+pritunl_svc_name: pritunl
+pritunl_svc_state: started
+
+# --------------------------------
+...
