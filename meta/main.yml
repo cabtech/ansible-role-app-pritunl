@@ -1,7 +1,10 @@
 ---
 # --------------------------------
 
-dependencies: ["ansible-role-app-mongodb"]
+dependencies:
+- src: git+https://github.com/cabtech/ansible-role-app-mongodb.git
+  version: "1.0.0"
+  tags: always
 
 galaxy_info:
   author: Tim Short
