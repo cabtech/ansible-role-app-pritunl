@@ -1,12 +1,29 @@
 ---
 # --------------------------------
 
+- name: "Include variables wrapper"
+  ansible.builtin.include_tasks:
+    file: variables.yml
+  tags: ["ct-pritunl"]
+
+- name: "Disto/Family tasks (FF)"
+  ansible.builtin.include_tasks:
+    file: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    params:
+      files:
+      - "{{ ansible_facts['distribution'] }}-{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+      - "{{ ansible_facts['distribution'] }}.yml"
+      - "{{ ansible_facts['os_family'] }}.yml"
+      - "default.yml"
+  tags: ["ct-pritunl"]
+
 - name: "Pritunl dependencies"
   ansible.builtin.apt:
     name: "{{ pritunl_pkg_dependencies }}"
     state: present
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Signing key of Pritunl repo"
   ansible.builtin.apt_key:
@@ -15,7 +32,7 @@
     state: "{{ pritunl_state }}"
     validate_certs: true
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "APT repository"
   ansible.builtin.apt_repository:
@@ -26,7 +43,7 @@
     validate_certs: true
   register: reg_apt
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "System limits"
   ansible.builtin.copy:
@@ -36,7 +53,7 @@
     owner: root
     src: limits.conf
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Mongodb admin user"
   community.mongodb.mongodb_user:
@@ -46,7 +63,7 @@
     roles: "userAdminAnyDatabase,dbAdminAnyDatabase,readWriteAnyDatabase"
     state: present
   when: mongodb_root_password is defined
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Mongodb pritunl user"
   community.mongodb.mongodb_user:
@@ -58,7 +75,7 @@
   when:
   - mongodb_pritunl_password is defined
   - mongodb_root_password is defined
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Control Mongodb authorisation"
   ansible.builtin.lineinfile:
@@ -68,7 +85,7 @@
   when: mongodb_root_password is defined
   notify: HandlerRestartMongoDb
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Pritunl package"
   ansible.builtin.apt:
@@ -77,7 +94,7 @@
     update_cache: "{{ reg_apt is changed }}"
   ignore_errors: "{{ ansible_check_mode }}"
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Pritunl configuration file"
   ansible.builtin.template:
@@ -90,7 +107,7 @@
   no_log: true
   notify: HandlerRestartPrintunl
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 - name: "Pritunl service"
   ansible.builtin.systemd:
@@ -98,7 +115,7 @@
     name: "{{ pritunl_svc_name }}"
     state: "{{ pritunl_svc_state }}"
   become: true
-  tags: [ct-pritunl]
+  tags: ["ct-pritunl"]
 
 # --------------------------------
 ...
